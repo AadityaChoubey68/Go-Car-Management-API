@@ -21,12 +21,12 @@ type Car struct {
 }
 
 type CarRequest struct {
-	Name     string    `json:"name"`
-	Year     string    `json:"year"`
-	Brand    string    `json:"brand"`
-	FuelType string    `json:"fueltype"`
-	Engine   EngineReq `json:"engine"`
-	Price    float64   `json:"price"`
+	Name     string  `json:"name"`
+	Year     string  `json:"year"`
+	Brand    string  `json:"brand"`
+	FuelType string  `json:"fueltype"`
+	Engine   Engine  `json:"engine"`
+	Price    float64 `json:"price"`
 }
 
 func ValidateRequest(carReq CarRequest) error {
@@ -36,7 +36,7 @@ func ValidateRequest(carReq CarRequest) error {
 	if err := ValidateBrand(carReq.Brand); err != nil {
 		return err
 	}
-	if err := ValidateEngineReq(carReq.Engine); err != nil {
+	if err := ValidateEngine(carReq.Engine); err != nil {
 		return err
 	}
 	if err := ValidateFuelType(carReq.FuelType); err != nil {
@@ -91,21 +91,21 @@ func ValidateFuelType(fueltype string) error {
 	return errors.New("fueltype must be petrol, deisel, cng, electric")
 }
 
-// func ValidateEngine(engine Engine) error {
-// 	if engine.EngID == uuid.Nil {
-// 		return errors.New("engineId is required")
-// 	}
-// 	if engine.Displacement <= 0 {
-// 		return errors.New("displacement must be greater than zero")
-// 	}
-// 	if engine.NoOfCylinders <= 0 {
-// 		return errors.New("noOfCylinders must be greater than zero")
-// 	}
-// 	if engine.CarRange <= 0 {
-// 		return errors.New("carRange must be greater than zero")
-// 	}
-// 	return nil
-// }
+func ValidateEngine(engine Engine) error {
+	if engine.EngID == uuid.Nil {
+		return errors.New("engineId is required")
+	}
+	if engine.Displacement <= 0 {
+		return errors.New("displacement must be greater than zero")
+	}
+	if engine.NoOfCylinders <= 0 {
+		return errors.New("noOfCylinders must be greater than zero")
+	}
+	if engine.CarRange <= 0 {
+		return errors.New("carRange must be greater than zero")
+	}
+	return nil
+}
 
 func ValidatePrice(price float64) error {
 	if price <= 0 {
