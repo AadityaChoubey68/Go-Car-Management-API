@@ -77,17 +77,21 @@ docker-compose up --build
 ```
 
 🛣️ API Endpoints
+```bash
 Method	Endpoint	  Description
 GET/cars	        List all cars
 GET/cars/{id}	    Get car by ID
 POST/cars	        Create a new car
 PUT/cars/{id}	    Update an existing car
 DELETE/cars/{id}	Delete a car
+```
 
 🧹 To Reset Database
+```bash
 
 docker-compose down -v
 docker-compose up --build
+```
 
 🧑‍💻 Author
 Aditya N. Chaubey
