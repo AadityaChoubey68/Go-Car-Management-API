@@ -20,8 +20,8 @@ func New(db *sql.DB) Store {
 
 func (s Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 	var car models.Car
-	query := `SELECT c.id, c.name, c.year, brand, c. fueltype, c.engine_id, c.price, c.created_at,
-	c.updated_at, e.id, e.displacement, e.no_of_cyclinders, e.car_range FROM car c LEFT JOIN
+	query := `SELECT c.id, c.name, c.year, brand, c.fuel_type, c.engine_id, c.price, c.created_at,
+	c.updated_at, e.id, e.displacement, e.no_of_cylinders, e.car_range FROM car c LEFT JOIN
 	engine e ON c.engine_id = e.id WHERE c.id=$1`
 
 	row := s.db.QueryRowContext(ctx, query, id)
@@ -53,10 +53,10 @@ func (s Store) GetCarByBrand(ctx context.Context, brand string, isEngine bool) (
 	var cars []models.Car
 	var query string
 	if isEngine {
-		query = `SELECT c.id, c.name, c.year, c.brand, c. fueltype, c.engine_id, c.price, c.created_at, c.updated_at,
-		e.id, e.displacement, e.no_of_cyclinders, e.car_range FROM car c LEFT JOIN engine e ON c.engine_id=e.id WHERE c.brand = $1`
+		query = `SELECT c.id, c.name, c.year, c.brand, c.fuel_type, c.engine_id, c.price, c.created_at, c.updated_at,
+		e.id, e.displacement, e.no_of_cyclinders, e.car_range FROM car c LEFT JOIN engine e ON c.engine_id = e.id WHERE c.brand = $1`
 	} else {
-		query = `SELECT id, name, year, brand, fueltype, engine_id, price, created_at, updated_at FROM car
+		query = `SELECT id, name, year, brand, fuel_type, engine_id, price, created_at, updated_at FROM car
 		WHERE brand = $1`
 	}
 	row, err := s.db.QueryContext(ctx, query, brand)
@@ -115,7 +115,7 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 	err := s.db.QueryRowContext(ctx, "SELECT id FROM engine WHERE id=$1", carReq.Engine.EngID).Scan(&engineId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return createCar, errors.New("Engine id does not be exist in table")
+			return createCar, errors.New("engine id does not be exist in table")
 		}
 	}
 	carId := uuid.New()
@@ -146,9 +146,9 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 		err = tx.Commit()
 	}()
 
-	query := `INSERT INTO car (id,name,year,brand,fueltype,engine_id,price,created_at,updated_at) 
+	query := `INSERT INTO car (id,name,year,brand,fuel_type,engine_id,price,created_at,updated_at) 
 	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-	RETURNING id,name,year,brand,fueltype,engine_id,price,created_at,updated_at`
+	RETURNING id,name,year,brand,fuel_type,engine_id,price,created_at,updated_at`
 
 	err = tx.QueryRowContext(ctx, query,
 		newCar.ID,
@@ -160,15 +160,15 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 		newCar.Price,
 		newCar.CreatedAt,
 		newCar.UpdatedAt).Scan(
-		createCar.ID,
-		createCar.Name,
-		createCar.Year,
-		createCar.Brand,
-		createCar.FuelType,
-		createCar.Engine.EngID,
-		createCar.Price,
-		createCar.CreatedAt,
-		createCar.UpdatedAt,
+		&createCar.ID,
+		&createCar.Name,
+		&createCar.Year,
+		&createCar.Brand,
+		&createCar.FuelType,
+		&createCar.Engine.EngID,
+		&createCar.Price,
+		&createCar.CreatedAt,
+		&createCar.UpdatedAt,
 	)
 	if err != nil {
 		return createCar, err
@@ -191,12 +191,13 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 	}()
 
 	query := `
-		UPDATED CAR
-		SET name=$2,year = $3, fueltype = $5, engine_id = $6, price  = $7, updated_at = $8
-		WHERE id = $1
-		RETURN id, name, year, brand, fueltype, engine_id, price, price, created_at, updated_at
+	UPDATE car
+	SET name=$2, year=$3, brand=$4, fuel_type=$5, engine_id=$6, price=$7, created_at=$8, updated_at=$9
+	WHERE id=$1
+	RETURNING id, name, year, brand, fuel_type, engine_id, price, created_at, updated_at
 	`
 
+	now := time.Now()
 	err = tx.QueryRowContext(ctx, query,
 		id,
 		carReq.Name,
@@ -205,16 +206,17 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 		carReq.FuelType,
 		carReq.Engine.EngID,
 		carReq.Price,
-		time.Now()).Scan(
-		updatedCar.ID,
-		updatedCar.Name,
-		updatedCar.Year,
-		updatedCar.Brand,
-		updatedCar.FuelType,
-		updatedCar.Engine.EngID,
-		updatedCar.Price,
-		updatedCar.CreatedAt,
-		updatedCar.UpdatedAt,
+		now,
+		now).Scan(
+		&updatedCar.ID,
+		&updatedCar.Name,
+		&updatedCar.Year,
+		&updatedCar.Brand,
+		&updatedCar.FuelType,
+		&updatedCar.Engine.EngID,
+		&updatedCar.Price,
+		&updatedCar.CreatedAt,
+		&updatedCar.UpdatedAt,
 	)
 	if err != nil {
 		return updatedCar, err
@@ -236,7 +238,7 @@ func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
 		err = tx.Commit()
 	}()
 
-	err = tx.QueryRowContext(ctx, "SELECT id, name, brand, year, fueltype, engine_id, price, created_at, updated_at FROM car WHERE id=$1", id).Scan(
+	err = tx.QueryRowContext(ctx, "SELECT id, name, brand, year, fuel_type, engine_id, price, created_at, updated_at FROM car WHERE id=$1", id).Scan(
 		&deletedCar.ID,
 		&deletedCar.Name,
 		&deletedCar.Year,

@@ -2,6 +2,7 @@ package car
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/AadityaChoubey68/Go-Car-Management-API/models"
 	"github.com/AadityaChoubey68/Go-Car-Management-API/store"
@@ -47,11 +48,11 @@ func (s *CarService) CreateCar(ctx context.Context, car *models.CarRequest) (*mo
 
 func (s *CarService) UpdateCar(ctx context.Context, id string, carReq *models.CarRequest) (*models.Car, error) {
 	if err := models.ValidateRequest(*carReq); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while validating update req body")
 	}
 	updatedCar, err := s.store.UpdateCar(ctx, id, carReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error returned from store update car func : %w", err)
 	}
 	return &updatedCar, err
 }

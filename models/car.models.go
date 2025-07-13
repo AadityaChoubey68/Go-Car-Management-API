@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,7 +14,7 @@ type Car struct {
 	Name      string    `json:"name"`
 	Year      string    `json:"year"`
 	Brand     string    `json:"brand"`
-	FuelType  string    `json:"fueltype"`
+	FuelType  string    `json:"fuel_type"`
 	Engine    Engine    `json:"engine"`
 	Price     float64   `json:"price"`
 	CreatedAt time.Time `json:"created_at"`
@@ -24,7 +25,7 @@ type CarRequest struct {
 	Name     string  `json:"name"`
 	Year     string  `json:"year"`
 	Brand    string  `json:"brand"`
-	FuelType string  `json:"fueltype"`
+	FuelType string  `json:"fuel_type"`
 	Engine   Engine  `json:"engine"`
 	Price    float64 `json:"price"`
 }
@@ -81,14 +82,16 @@ func ValidateBrand(brand string) error {
 }
 
 func ValidateFuelType(fueltype string) error {
-	validfueltype := []string{"petrol", "deisel", "cng", "electric"}
+	fueltype = strings.ToLower(fueltype) // normalize
+
+	validfueltype := []string{"petrol", "diesel", "cng", "electric"}
 
 	for _, validType := range validfueltype {
 		if fueltype == validType {
 			return nil
 		}
 	}
-	return errors.New("fueltype must be petrol, deisel, cng, electric")
+	return errors.New("fueltype must be one of: petrol, diesel, cng, electric")
 }
 
 func ValidateEngine(engine Engine) error {
