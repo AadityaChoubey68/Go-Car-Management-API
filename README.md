@@ -74,7 +74,7 @@ docker-compose up --build
   },
   "price": 38000.00
 }
-
+```
 
 🛣️ API Endpoints
 Method	Endpoint	  Description
