@@ -58,8 +58,9 @@ carzone/
 
 ```bash
 docker-compose up --build
-
+```
 🧪 Sample Car Request Body
+```bash
 {
   "id": "a3f86b1a-1111-4c19-bae2-fc60329d01234",
   "name": "Audi A4",
@@ -77,14 +78,29 @@ docker-compose up --build
 ```
 
 🛣️ API Endpoints
-```bash
+
 Method	Endpoint	  Description
 GET/cars	        List all cars
 GET/cars/{id}	    Get car by ID
 POST/cars	        Create a new car
 PUT/cars/{id}	    Update an existing car
 DELETE/cars/{id}	Delete a car
-```
+
+### 🔍 Distributed Tracing with OpenTelemetry & Jaeger
+To gain better observability and performance insights into the Car Management API, distributed tracing has been implemented across the project using:
+- OpenTelemetry for generating and exporting trace data
+- Jaeger as the tracing backend to visualize and analyze traces
+- otelmux middleware for automatic tracing of all HTTP requests
+- Tracing is integrated at all key layers: Handler, Service, and Store
+
+This setup helps in:
+- Monitoring the lifecycle of every API request
+- Identifying slow operations and bottlenecks
+- Debugging and understanding the internal flow of requests in production-like environments
+
+Then open http://localhost:16686 to access the Jaeger UI and view the trace data.
+
+---
 
 🧹 To Reset Database
 ```bash
