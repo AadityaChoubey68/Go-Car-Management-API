@@ -8,6 +8,7 @@ import (
 
 	"github.com/AadityaChoubey68/Go-Car-Management-API/models"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
 )
 
 type Store struct {
@@ -19,6 +20,9 @@ func New(db *sql.DB) Store {
 }
 
 func (s Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "GetCarById-Store")
+	defer span.End()
 	var car models.Car
 	query := `SELECT c.id, c.name, c.year, brand, c.fuel_type, c.engine_id, c.price, c.created_at,
 	c.updated_at, e.id, e.displacement, e.no_of_cylinders, e.car_range FROM car c LEFT JOIN
@@ -50,6 +54,9 @@ func (s Store) GetCarById(ctx context.Context, id string) (models.Car, error) {
 }
 
 func (s Store) GetCarByBrand(ctx context.Context, brand string, isEngine bool) ([]models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "GetCarByBrand-Store")
+	defer span.End()
 	var cars []models.Car
 	var query string
 	if isEngine {
@@ -109,6 +116,9 @@ func (s Store) GetCarByBrand(ctx context.Context, brand string, isEngine bool) (
 }
 
 func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "CreateCar-Store")
+	defer span.End()
 	var createCar models.Car
 	var engineId uuid.UUID
 
@@ -178,6 +188,9 @@ func (s Store) CreateCar(ctx context.Context, carReq *models.CarRequest) (models
 }
 
 func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarRequest) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "UpdateCar-Store")
+	defer span.End()
 	var updatedCar models.Car
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -226,6 +239,9 @@ func (s Store) UpdateCar(ctx context.Context, id string, carReq *models.CarReque
 }
 
 func (s Store) DeleteCar(ctx context.Context, id string) (models.Car, error) {
+	tracer := otel.Tracer("CarStore")
+	ctx, span := tracer.Start(ctx, "DeleteCar-Store")
+	defer span.End()
 	var deletedCar models.Car
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {

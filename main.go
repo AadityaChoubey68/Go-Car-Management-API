@@ -1,7 +1,18 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"log"
 	"net/http"
@@ -27,6 +38,20 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading evn file")
 	}
+
+	traceProvider, err := startTracing()
+	if err != nil {
+		log.Printf("Failed to start Tracing : %v", err)
+	}
+
+	otel.SetTracerProvider(traceProvider)
+
+	defer func() {
+		if err := traceProvider.Shutdown(context.Background()); err != nil {
+			log.Printf("Failed to Shutdown Tracing : %v", err)
+		}
+	}()
+
 	driver.InitDB()
 	defer driver.CloseDB()
 
@@ -41,6 +66,8 @@ func main() {
 	engineHandler := engineHandler.NewEngineHandler(EngineService)
 
 	router := mux.NewRouter()
+
+	router.Use(otelmux.Middleware("CarZone"))
 
 	schemaFile := "store/schema.sql"
 	if err := ExecuteSchemaFile(db, schemaFile); err != nil {
@@ -84,4 +111,36 @@ func ExecuteSchemaFile(db *sql.DB, fileName string) error {
 		return err
 	}
 	return nil
+}
+
+func startTracing() (*trace.TracerProvider, error) {
+	header := map[string]string{
+		"Content-Type": "application/json",
+	}
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracehttp.NewClient(
+			otlptracehttp.WithEndpoint("jaeger:4318"),
+			otlptracehttp.WithHeaders(header),
+			otlptracehttp.WithInsecure(),
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating new exporter : %w", err)
+	}
+
+	traceProvider := trace.NewTracerProvider(
+		trace.WithBatcher(
+			exporter,
+			trace.WithMaxExportBatchSize(trace.DefaultMaxExportBatchSize),
+			trace.WithBatchTimeout(trace.DefaultScheduleDelay*time.Millisecond),
+		),
+		trace.WithResource(
+			resource.NewWithAttributes(
+				semconv.SchemaURL,
+				semconv.ServiceNameKey.String("CarZone"),
+			),
+		),
+	)
+	return traceProvider, nil
 }
