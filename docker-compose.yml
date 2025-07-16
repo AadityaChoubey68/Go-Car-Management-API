@@ -1,6 +1,4 @@
-version: "3.8"
-
-services:
+services: # No 'version:' line anymore
   app:
     build: .
     depends_on:
@@ -14,6 +12,8 @@ services:
       DB_USER: postgres
       DB_PASSWORD: 12345
       DB_NAME: postgres
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 4318
 
   db:
     image: postgres:13
@@ -31,5 +31,32 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-volumes:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp" # UDP for Jaeger agent (Thrift)
+      - "4318:4318"    # OTLP HTTP receiver (for OpenTelemetry SDKs, recommended)
+      - "14268:14268"  # Jaeger Collector HTTP (for Thrift)
+      - "16686:16686"  # Jaeger UI
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+     - "9090:9090"
+    volumes:
+     - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+     - "3000:3000"
+    depends_on:
+     - prometheus
+    environment: # Corrected 'enviorment' typo
+      GF_SECURITY_ADMIN_PASSWORD: "admin"
+    volumes:
+     - grafana-data:/var/lib/grafana # Referring to the named volume
+    
+volumes: # Top-level volumes section
   postgres-data:
+  grafana-data: # <-- Explicitly defined the named volume here

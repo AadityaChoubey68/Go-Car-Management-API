@@ -4,19 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
-
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	middleware "github.com/AadityaChoubey68/Go-Car-Management-API/Middleware"
 	"github.com/AadityaChoubey68/Go-Car-Management-API/driver"
@@ -28,9 +19,16 @@ import (
 	carStore "github.com/AadityaChoubey68/Go-Car-Management-API/store/car"
 	engineStore "github.com/AadityaChoubey68/Go-Car-Management-API/store/engine"
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
-
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func main() {
@@ -68,6 +66,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.Use(otelmux.Middleware("CarZone"))
+	router.Use(middleware.MetricMiddleware)
 
 	schemaFile := "store/schema.sql"
 	if err := ExecuteSchemaFile(db, schemaFile); err != nil {
@@ -90,6 +89,8 @@ func main() {
 	protected.HandleFunc("/engine", engineHandler.CreateEngine).Methods("POST")
 	protected.HandleFunc("/engine/{id}", engineHandler.UpdateEngine).Methods("PUT")
 	protected.HandleFunc("/engine/{id}", engineHandler.DeleteEngine).Methods("DELETE")
+
+	router.Handle("/metrics", promhttp.Handler())
 
 	port := os.Getenv("PORT")
 	if port == "" {
